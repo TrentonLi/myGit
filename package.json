@@ -1,0 +1,21 @@
+{
+  "name": "mygit",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "mygit": "./bin/mygit.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "一个简化 Git 操作的交互式命令行工具",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^14.0.0",
+    "inquirer": "^8.2.7",
+    "simple-git": "^3.28.0"
+  }
+}
