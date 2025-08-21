@@ -15,3 +15,4 @@ chmod +x bin/mygit.js
 ```
 npm link
 ```
+<img width="429" height="314" alt="image" src="https://github.com/user-attachments/assets/c7d951af-8688-4d6c-ba7a-5543b4b53938" />
