@@ -28,6 +28,7 @@ async function main() {
                 "推送代码 (git push)",
                 "分支管理 (查看/切换分支)",
                 "合并分支",
+                "远程仓库管理",
                 "退出"
             ]
         }
@@ -143,6 +144,88 @@ async function main() {
                 console.log(chalk.green(`✅ 已合并分支 ${branch} 到 ${currentBranch}`));
             } catch (err) {
                 console.log(chalk.red("❌ 合并失败:"), err.message);
+            }
+            break;
+        }
+        case "远程仓库管理": {
+            const remotes = await git.getRemotes(true);
+            if (remotes.length === 0) {
+                console.log(chalk.red("⚠️ 当前没有配置远程仓库"));
+            } else {
+                console.log(chalk.blue("📡 当前远程仓库:"));
+                remotes.forEach(r => {
+                    console.log(chalk.green(`- ${r.name}: ${r.refs.fetch}`));
+                });
+            }
+
+            const { remoteAction } = await inquirer.prompt([
+                {
+                    type: "list",
+                    name: "remoteAction",
+                    message: "选择远程仓库操作:",
+                    choices: [
+                        "添加远程仓库",
+                        "修改远程仓库地址",
+                        "删除远程仓库",
+                        "返回"
+                    ]
+                }
+            ]);
+
+            switch (remoteAction) {
+                case "添加远程仓库": {
+                    const { name, url } = await inquirer.prompt([
+                        { type: "input", name: "name", message: "请输入远程仓库名称:", default: "origin" },
+                        { type: "input", name: "url", message: "请输入远程仓库地址:" }
+                    ]);
+                    await git.addRemote(name, url);
+                    console.log(chalk.green(`✅ 已添加远程仓库 ${name}: ${url}`));
+                    break;
+                }
+
+                case "修改远程仓库地址": {
+                    if (remotes.length === 0) {
+                        console.log(chalk.red("⚠️ 当前没有可修改的远程仓库"));
+                        break;
+                    }
+                    const { remoteName, newUrl } = await inquirer.prompt([
+                        {
+                            type: "list",
+                            name: "remoteName",
+                            message: "选择要修改的远程仓库:",
+                            choices: remotes.map(r => r.name)
+                        },
+                        {
+                            type: "input",
+                            name: "newUrl",
+                            message: "请输入新的远程仓库地址:"
+                        }
+                    ]);
+                    await git.remote(["set-url", remoteName, newUrl]);
+                    console.log(chalk.green(`✅ 已修改远程仓库 ${remoteName} 地址为: ${newUrl}`));
+                    break;
+                }
+
+                case "删除远程仓库": {
+                    if (remotes.length === 0) {
+                        console.log(chalk.red("⚠️ 当前没有可删除的远程仓库"));
+                        break;
+                    }
+                    const { remoteName } = await inquirer.prompt([
+                        {
+                            type: "list",
+                            name: "remoteName",
+                            message: "选择要删除的远程仓库:",
+                            choices: remotes.map(r => r.name)
+                        }
+                    ]);
+                    await git.removeRemote(remoteName);
+                    console.log(chalk.green(`🗑️ 已删除远程仓库: ${remoteName}`));
+                    break;
+                }
+
+                case "返回":
+                    break;
             }
             break;
         }
