@@ -6,7 +6,7 @@
 npm install
 ```
 
-### 2.添加执行权限
+### 2.添加执行权限(MAC系统)
 ```
 chmod +x bin/mygit.js
 ```
