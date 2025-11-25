@@ -10,6 +10,8 @@ const ACTIONS = {
     COMMIT_PUSH: "提交代码 (add. && commit && pull && push)",
     PULL: "拉取代码 (git pull)",
     PUSH: "推送代码 (git push)",
+    STASH: "暂存当前修改 (git stash)",
+    STASH_POP: "弹出暂存 (git stash pop)",
     BRANCH_MANAGE: "分支管理 (查看/切换分支)",
     MERGE: "合并分支",
     REMOTE_MANAGE: "远程仓库管理",
@@ -45,7 +47,7 @@ async function getCurrentBranch() {
  * 获取远程仓库列表
  */
 async function getRemotes() {
-    return await git.getRemotes(true);
+    return git.getRemotes(true);
 }
 
 /**
@@ -103,7 +105,7 @@ async function showStatus() {
 async function commitAndPush() {
     try {
         const currentBranch = await getCurrentBranch();
-        
+
         // 检查是否有变更
         const status = await git.status();
         if (status.modified.length === 0 && status.not_added.length === 0) {
@@ -111,10 +113,10 @@ async function commitAndPush() {
             return;
         }
 
-        const { msg } = await inquirer.prompt([
-            { 
-                type: "input", 
-                name: "msg", 
+        const {msg} = await inquirer.prompt([
+            {
+                type: "input",
+                name: "msg",
                 message: "请输入提交信息:",
                 validate: (input) => input.trim().length > 0 || "提交信息不能为空"
             }
@@ -122,7 +124,7 @@ async function commitAndPush() {
 
         console.log(chalk.blue("📦 正在添加文件..."));
         await git.add(".");
-        
+
         console.log(chalk.blue("💾 正在提交..."));
         await git.commit(msg.trim());
         console.log(chalk.green("✅ 提交成功"));
@@ -173,6 +175,48 @@ async function pullCode() {
     }
 }
 
+//暂存
+async function stashSave() {
+    try {
+        const status = await git.status();
+        if (
+            status.modified.length === 0 &&
+            status.not_added.length === 0 &&
+            status.staged.length === 0
+        ) {
+            console.log(chalk.yellow("⚠️ 没有需要暂存的更改"));
+            return;
+        }
+
+        const {msg} = await inquirer.prompt([
+            {
+                type: "input",
+                name: "msg",
+                message: "请输入暂存备注（可留空）:"
+            }
+        ]);
+
+        console.log(chalk.blue("📦 正在暂存当前修改..."));
+        await git.stash(msg ? ["push", "-m", msg] : []);
+        console.log(chalk.green("✅ 已成功暂存修改"));
+    } catch (err) {
+        handleError(err, "暂存修改");
+    }
+}
+
+/**
+ * 弹出最近一次暂存
+ */
+async function stashPop() {
+    try {
+        console.log(chalk.blue("📦 正在弹出最近一次暂存..."));
+        await git.stash(["pop"]);
+        console.log(chalk.green("✅ 暂存已成功弹出"));
+    } catch (err) {
+        handleError(err, "弹出暂存");
+    }
+}
+
 /**
  * 推送代码
  */
@@ -185,7 +229,7 @@ async function pushCode() {
         }
 
         const currentBranch = await getCurrentBranch();
-        const { remote, branch } = await inquirer.prompt([
+        const {remote, branch} = await inquirer.prompt([
             {
                 type: "list",
                 name: "remote",
@@ -223,7 +267,7 @@ async function manageBranches() {
             console.log(chalk.gray(`${prefix}${branch}`));
         });
 
-        const { branch } = await inquirer.prompt([
+        const {branch} = await inquirer.prompt([
             {
                 type: "list",
                 name: "branch",
@@ -260,7 +304,7 @@ async function mergeBranch() {
             return;
         }
 
-        const { branch } = await inquirer.prompt([
+        const {branch} = await inquirer.prompt([
             {
                 type: "list",
                 name: "branch",
@@ -269,7 +313,7 @@ async function mergeBranch() {
             }
         ]);
 
-        const { confirm } = await inquirer.prompt([
+        const {confirm} = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "confirm",
@@ -296,17 +340,17 @@ async function mergeBranch() {
  */
 async function addRemote() {
     try {
-        const { name, url } = await inquirer.prompt([
-            { 
-                type: "input", 
-                name: "name", 
-                message: "请输入远程仓库名称:", 
+        const {name, url} = await inquirer.prompt([
+            {
+                type: "input",
+                name: "name",
+                message: "请输入远程仓库名称:",
                 default: "origin",
                 validate: (input) => input.trim().length > 0 || "名称不能为空"
             },
-            { 
-                type: "input", 
-                name: "url", 
+            {
+                type: "input",
+                name: "url",
                 message: "请输入远程仓库地址:",
                 validate: (input) => input.trim().length > 0 || "地址不能为空"
             }
@@ -329,7 +373,7 @@ async function updateRemote() {
             return;
         }
 
-        const { remoteName, newUrl } = await inquirer.prompt([
+        const {remoteName, newUrl} = await inquirer.prompt([
             {
                 type: "list",
                 name: "remoteName",
@@ -361,7 +405,7 @@ async function deleteRemote() {
             return;
         }
 
-        const { remoteName } = await inquirer.prompt([
+        const {remoteName} = await inquirer.prompt([
             {
                 type: "list",
                 name: "remoteName",
@@ -370,7 +414,7 @@ async function deleteRemote() {
             }
         ]);
 
-        const { confirm } = await inquirer.prompt([
+        const {confirm} = await inquirer.prompt([
             {
                 type: "confirm",
                 name: "confirm",
@@ -405,7 +449,7 @@ async function manageRemotes() {
         });
     }
 
-    const { remoteAction } = await inquirer.prompt([
+    const {remoteAction} = await inquirer.prompt([
         {
             type: "list",
             name: "remoteAction",
@@ -441,7 +485,7 @@ async function showMainMenu() {
     const currentBranch = await getCurrentBranch();
     console.log(chalk.blue(`\n📂 当前分支: ${currentBranch}\n`));
 
-    const { action } = await inquirer.prompt([
+    const {action} = await inquirer.prompt([
         {
             type: "list",
             name: "action",
@@ -451,6 +495,8 @@ async function showMainMenu() {
                 ACTIONS.COMMIT_PUSH,
                 ACTIONS.PULL,
                 ACTIONS.PUSH,
+                ACTIONS.STASH,
+                ACTIONS.STASH_POP,
                 ACTIONS.BRANCH_MANAGE,
                 ACTIONS.MERGE,
                 ACTIONS.REMOTE_MANAGE,
@@ -478,6 +524,12 @@ async function executeAction(action) {
             break;
         case ACTIONS.PUSH:
             await pushCode();
+            break;
+        case ACTIONS.STASH:
+            await stashSave();
+            break;
+        case ACTIONS.STASH_POP:
+            await stashPop();
             break;
         case ACTIONS.BRANCH_MANAGE:
             await manageBranches();
@@ -518,7 +570,7 @@ async function main() {
         try {
             const action = await showMainMenu();
             await executeAction(action);
-            
+
             // 如果不是退出操作，等待用户按回车继续
             if (action !== ACTIONS.EXIT) {
                 await waitForContinue();
